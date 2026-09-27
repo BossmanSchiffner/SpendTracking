@@ -31,7 +31,7 @@ GitHub Pages serves these files publicly. The app itself contains no personal tr
 
 ## Current feature notes
 
-- Recurring must-pay presets are managed from **Debts** and enabled presets are copied once when a new pay period starts.
+- Recurring must-pay presets are managed from **Debts** with bi-weekly or monthly frequency and a next/last payment date anchor; enabled presets are copied into pay periods containing a due payment.
 - The Debts view tracks balances and debt allocations; debt payments reduce the tracked current balance.
 - Daily check-in dates are selected from the two-week grid. **All purchases logged** remains available for purchase days, while days with no discretionary purchases receive a no-spending status automatically.
 - The complete engineering context is in [HANDOFF_PACKAGE.md](HANDOFF_PACKAGE.md).

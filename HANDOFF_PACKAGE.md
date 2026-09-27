@@ -48,9 +48,12 @@ Each preset has:
 - `name`
 - `amountCents`
 - `enabled`
+- `cadence`: `bi-weekly` or `monthly`
+- `anchorType`: `next` or `last`
+- `anchorDate`: the selected payment date
 - timestamps
 
-Enabled presets are copied into a newly created pay period by `addRecurringMustPaysForPeriod(period)`. The copied allocation stores `sourcePresetId`, so the preset is not recopied on render or refresh. Presets can be added, edited, toggled, and deleted from the Debts view.
+Enabled presets are copied into a newly created pay period by `addRecurringMustPaysForPeriod(period)` only when the calculated due date falls inside that period. The copied allocation stores `sourcePresetId` and `dueDate`, so the preset is not recopied on render or refresh. Monthly dates are clamped to the last valid day of shorter months. Presets can be added, edited, toggled, and deleted from the Debts view.
 
 ## Debt Tracker
 
@@ -63,11 +66,12 @@ Each debt has:
 - `startingBalanceCents`
 - `currentBalanceCents`
 - `interestChargeCents`
+- `interestRateBps`: percentage rate stored in hundredths of a percent
 - `interestCadence`: `monthly`, `per-pay-period`, or `one-time`
 - `active`
 - timestamps
 
-Debt allocations reference `debtId`. `applyDebtAllocationDelta` adjusts the current balance when a debt allocation is created, edited, moved to another debt, or deleted. The tracker is exposed from the Debts navigation view. The code contains two legacy `debt-list` IDs; the `$` helper routes Home allocation rendering and Debts tracker rendering to the correct container.
+Debt allocations reference `debtId`. The editor accepts an interest percentage and computes `interestChargeCents` from the balance; the percentage is retained as `interestRateBps` for future edits. `applyDebtAllocationDelta` adjusts the current balance when a debt allocation is created, edited, moved to another debt, or deleted. The tracker is exposed from the Debts navigation view. The code contains two legacy `debt-list` IDs; the `$` helper routes Home allocation rendering and Debts tracker rendering to the correct container.
 
 ## Daily Check-In Behavior
 
