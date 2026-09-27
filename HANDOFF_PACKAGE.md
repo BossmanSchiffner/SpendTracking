@@ -76,7 +76,7 @@ The two-week day grid is the date selector. The visible date input is hidden and
 - Users tap a day tile to select a date.
 - The `All purchases logged` action remains available only when the selected day has discretionary purchases.
 - The `No spending` action is hidden.
-- A day with no discretionary purchases automatically receives the derived `no-spend` status.
+- A completed past day with no discretionary purchases automatically receives the derived `no-spend` status; the current day remains `pending` until it is complete.
 - Existing explicit check-in records remain supported for backup compatibility.
 - Future days remain neutral/disabled.
 

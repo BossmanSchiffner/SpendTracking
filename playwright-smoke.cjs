@@ -34,7 +34,7 @@ const state = await page.evaluate(() => ({
   presetDialog: Boolean(document.querySelector('#preset-dialog')),
   debtDialog: Boolean(document.querySelector('#debt-dialog')),
   dayTiles: document.querySelectorAll('#day-grid .day-tile').length,
-  automaticNoSpend: document.querySelector('#day-grid .day-tile.no-spend') !== null,
+  currentDayPending: document.querySelector('#day-grid .day-tile.pending') !== null,
   noSpendButtonHidden: document.querySelector('#mark-day').hidden,
   savedPreset: JSON.parse(localStorage.getItem('money-until-payday-v1')).recurringMustPays.length,
   savedDebt: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts.length
