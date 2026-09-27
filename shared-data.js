@@ -1,4 +1,4 @@
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
 import { firebaseApp } from './firebase-config.js';
 
 export const db = initializeFirestore(firebaseApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
@@ -10,8 +10,10 @@ const idToken = () => crypto.randomUUID().replaceAll('-', '');
 export async function createHousehold(name, user) {
   const id = crypto.randomUUID();
   const now = serverTimestamp();
-  await setDoc(householdRef(id), { name: name.trim(), ownerUid: user.uid, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', createdAt: now, updatedAt: now });
-  await setDoc(memberRef(id, user.uid), { uid: user.uid, displayName: user.displayName || user.email || 'Owner', role: 'owner', joinedAt: now, inviteToken: null });
+  const batch = writeBatch(db);
+  batch.set(householdRef(id), { name: name.trim(), ownerUid: user.uid, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', createdAt: now, updatedAt: now });
+  batch.set(memberRef(id, user.uid), { uid: user.uid, displayName: user.displayName || user.email || 'Owner', role: 'owner', joinedAt: now, inviteToken: null });
+  await batch.commit();
   localStorage.setItem('shared-household-id', id);
   return id;
 }

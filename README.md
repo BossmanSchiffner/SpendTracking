@@ -33,12 +33,12 @@ GitHub Pages serves these files publicly. The app itself contains no personal tr
 
 Shared Budgets is optional. Personal payday, debt, savings, history, achievements, and exports remain local. Opening Shared loads Firebase Authentication and Firestore; signed-out users are not prompted during normal personal-app startup.
 
-The Shared area supports email/password sign-in, household creation, invite links, shared budget periods, real-time shared purchases, archive state, persistent Firestore cache, and offline queued writes. Firebase Console setup must enable Email/Password Authentication, create the Firestore database, and deploy [firestore.rules](firestore.rules). No service-account credentials belong in this repository.
+The Shared area supports email/password sign-in, household creation, invite links, shared budget periods, real-time shared purchases, archive state, persistent Firestore cache, and offline queued writes. Firebase Console setup must enable Email/Password Authentication and create the Firestore database. Deploy the rules with `npx firebase deploy --only firestore:rules` from this folder. No service-account credentials belong in this repository.
 
 ## Current feature notes
 
 - Recurring must-pay presets are managed from **Debts** with bi-weekly or monthly frequency and a next/last payment date anchor; enabled presets are copied into pay periods containing a due payment.
-- The Debts view tracks balances and debt allocations; debt payments reduce the tracked current balance.
+- The Debts view tracks balances and debt allocations; debt payments reduce the tracked current balance. Interest can be monthly, per pay period, one time, or yearly. Yearly rates are split into 12 monthly charges, so 14% yearly on a $1,200 balance is $14.00 per month.
 - Daily check-in dates are selected from the two-week grid. **All purchases logged** remains available for purchase days, while days with no discretionary purchases receive a no-spending status automatically.
 - The complete engineering context is in [HANDOFF_PACKAGE.md](HANDOFF_PACKAGE.md).
 

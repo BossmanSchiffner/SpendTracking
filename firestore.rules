@@ -12,12 +12,12 @@ service cloud.firestore {
     }
     match /households/{householdId} {
       allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.name is string;
-      allow read: if isMember(householdId);
+      allow read: if signedIn() && (resource.data.ownerUid == request.auth.uid || isMember(householdId));
       allow update, delete: if isOwner(householdId);
       match /members/{uid} {
         allow get: if signedIn() && (request.auth.uid == uid || isOwner(householdId));
         allow list: if isOwner(householdId);
-        allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && ((request.resource.data.role == 'owner' && get(householdPath(householdId)).data.ownerUid == request.auth.uid) || (request.resource.data.role == 'member' && request.resource.data.inviteToken is string && validInvite(request.resource.data.inviteToken, householdId)));
+        allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && ((request.resource.data.role == 'owner' && (get(householdPath(householdId)).data.ownerUid == request.auth.uid || getAfter(householdPath(householdId)).data.ownerUid == request.auth.uid)) || (request.resource.data.role == 'member' && request.resource.data.inviteToken is string && validInvite(request.resource.data.inviteToken, householdId)));
         allow update: if isOwner(householdId) || (request.auth.uid == uid && request.resource.data.uid == resource.data.uid && request.resource.data.role == resource.data.role);
         allow delete: if isOwner(householdId) || (request.auth.uid == uid && resource.data.role != 'owner');
       }

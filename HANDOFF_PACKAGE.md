@@ -68,11 +68,11 @@ Each debt has:
 - `currentBalanceCents`
 - `interestChargeCents`
 - `interestRateBps`: percentage rate stored in hundredths of a percent
-- `interestCadence`: `monthly`, `per-pay-period`, or `one-time`
+- `interestCadence`: `monthly`, `per-pay-period`, `one-time`, or `yearly`
 - `active`
 - timestamps
 
-Debt allocations reference `debtId`. The editor accepts an interest percentage and computes `interestChargeCents` from the balance; the percentage is retained as `interestRateBps` for future edits. `applyDebtAllocationDelta` adjusts the current balance when a debt allocation is created, edited, moved to another debt, or deleted. The tracker is exposed from the Debts navigation view. The code contains two legacy `debt-list` IDs; the `$` helper routes Home allocation rendering and Debts tracker rendering to the correct container.
+Debt allocations reference `debtId`. The editor accepts an interest percentage and computes `interestChargeCents` from the balance; the percentage is retained as `interestRateBps` for future edits. Yearly rates are annual percentages and their charge is divided across 12 monthly payments, so a 14% yearly rate on a $1,200 balance stores a $14.00 monthly interest charge. `applyDebtAllocationDelta` adjusts the current balance when a debt allocation is created, edited, moved to another debt, or deleted. The tracker is exposed from the Debts navigation view. The code contains two legacy `debt-list` IDs; the `$` helper routes Home allocation rendering and Debts tracker rendering to the correct container.
 
 ## Daily Check-In Behavior
 
