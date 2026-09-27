@@ -127,9 +127,14 @@ Run:
 
 ```powershell
 node --check app.js
+npm install
+npx playwright install chromium
+node playwright-smoke.cjs
 ```
 
 Also check VS Code diagnostics for `app.js`, `index.html`, and `styles.css`.
+
+`playwright-smoke.cjs` opens the local app at 390px wide, captures browser/page errors, checks navigation overflow, creates a pay period, adds a recurring preset and debt, verifies persistence, and confirms automatic no-spend status.
 
 Manual smoke test through a local server:
 
