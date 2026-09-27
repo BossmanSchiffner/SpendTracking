@@ -1,4 +1,4 @@
-const CACHE='money-until-payday-v1-28';
+const CACHE='money-until-payday-v1-30';
 const SHELL=['./','./index.html','./styles.css','./app.js','./firebase-config.js','./shared-auth.js','./shared-data.js','./shared-budget-ui.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/bronze_500_savings_badge_transparent.png','./icons/silver_1000_savings_badge_transparent'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
