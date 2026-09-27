@@ -1,42 +1,779 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function householdPath(id) { return /databases/$(database)/documents/households/$(id); }
-    function memberPath(id) { return /databases/$(database)/documents/households/$(id)/members/$(request.auth.uid); }
-    function isMember(id) { return signedIn() && exists(memberPath(id)); }
-    function isOwner(id) { return isMember(id) && get(householdPath(id)).data.ownerUid == request.auth.uid; }
-    function validInvite(token, id) {
-      let invite = get(/databases/$(database)/documents/invites/$(token));
-      return signedIn() && invite.data.householdId == id && invite.data.active == true && invite.data.expiresAt > request.time;
+
+    // ============================================================
+    // COMMON HELPERS
+    // ============================================================
+
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function householdPath(householdId) {
+      return /databases/$(database)/documents/households/$(householdId);
+    }
+
+    function memberPath(householdId) {
+      return /databases/$(database)/documents/households/$(householdId)/members/$(request.auth.uid);
+    }
+
+    function isMember(householdId) {
+      return signedIn()
+        && exists(memberPath(householdId));
+    }
+
+    function isOwner(householdId) {
+      return isMember(householdId)
+        && get(householdPath(householdId)).data.ownerUid == request.auth.uid;
+    }
+
+    // Used when household + owner membership are created
+    // in the same batch/transaction.
+    function isOwnerAfterWrite(householdId) {
+      return signedIn()
+        && getAfter(
+          /databases/$(database)/documents/households/$(householdId)
+        ).data.ownerUid == request.auth.uid;
+    }
+
+    function validCurrency(currency) {
+      return currency is string
+        && currency in ['CAD', 'USD'];
+    }
+
+    function validDisplayName(name) {
+      return name is string
+        && name.size() > 0
+        && name.size() <= 80;
+    }
+
+    // ============================================================
+    // INVITE VALIDATION
+    // ============================================================
+
+    function validInvite(inviteToken, householdId) {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/invites/$(inviteToken)
+        )
+        && get(
+          /databases/$(database)/documents/invites/$(inviteToken)
+        ).data.householdId == householdId
+        && get(
+          /databases/$(database)/documents/invites/$(inviteToken)
+        ).data.active == true
+        && get(
+          /databases/$(database)/documents/invites/$(inviteToken)
+        ).data.expiresAt > request.time;
+    }
+
+    // ============================================================
+    // HOUSEHOLD VALIDATION
+    // ============================================================
+
+    function validHouseholdData(data) {
+      return data.keys().hasAll([
+          'name',
+          'ownerUid',
+          'currency',
+          'timeZone',
+          'schemaVersion',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'name',
+          'ownerUid',
+          'currency',
+          'timeZone',
+          'schemaVersion',
+          'createdAt',
+          'updatedAt'
+        ])
+
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 80
+
+        && data.ownerUid is string
+        && data.ownerUid.size() > 0
+
+        && validCurrency(data.currency)
+
+        && data.timeZone is string
+        && data.timeZone.size() > 0
+        && data.timeZone.size() <= 64
+
+        && data.schemaVersion is int
+        && data.schemaVersion == 1
+
+        && data.createdAt is timestamp
+
+        && (
+          !data.keys().hasAny(['updatedAt'])
+          || data.updatedAt is timestamp
+        );
+    }
+
+    // ============================================================
+    // MEMBER VALIDATION
+    // ============================================================
+
+    function validMemberData(data) {
+      return data.keys().hasAll([
+          'uid',
+          'role',
+          'displayName',
+          'joinedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'role',
+          'displayName',
+          'joinedAt',
+          'inviteToken'
+        ])
+
+        && data.uid is string
+
+        && data.role is string
+        && data.role in ['owner', 'member']
+
+        && validDisplayName(data.displayName)
+
+        && data.joinedAt is timestamp
+
+        && (
+          !data.keys().hasAny(['inviteToken'])
+          || data.inviteToken is string
+        );
+    }
+
+    function validMemberUpdate() {
+      let affected =
+        request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+
+      return affected.hasOnly([
+          'displayName',
+          'inviteToken'
+        ])
+
+        && validDisplayName(
+          request.resource.data.displayName
+        )
+
+        // inviteToken may only be REMOVED after joining.
+        // It cannot be added or replaced later.
+        && (
+          !affected.hasAny(['inviteToken'])
+          || !request.resource.data.keys().hasAny(['inviteToken'])
+        );
+    }
+
+    // ============================================================
+    // BUDGET VALIDATION
+    // ============================================================
+
+    function validBudgetData(data) {
+      return data.keys().hasAll([
+          'name',
+          'amountCents',
+          'currency',
+          'cadence',
+          'active',
+          'createdByUid',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'name',
+          'amountCents',
+          'currency',
+          'cadence',
+          'anchorDate',
+          'customDays',
+          'active',
+          'createdByUid',
+          'createdAt',
+          'updatedAt'
+        ])
+
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 80
+
+        && data.amountCents is int
+        && data.amountCents > 0
+
+        // $1,000,000 maximum budget.
+        // Mainly prevents garbage/malicious values.
+        && data.amountCents <= 100000000
+
+        && validCurrency(data.currency)
+
+        && data.cadence is string
+        && data.cadence in [
+          'weekly',
+          'biweekly',
+          'monthly',
+          'custom'
+        ]
+
+        && data.active is bool
+
+        && data.createdByUid is string
+        && data.createdByUid.size() > 0
+
+        && data.createdAt is timestamp
+
+        && (
+          !data.keys().hasAny(['updatedAt'])
+          || data.updatedAt is timestamp
+        )
+
+        // Weekly / biweekly / custom budgets need anchorDate.
+        && (
+          data.cadence == 'monthly'
+          ||
+          (
+            data.get('anchorDate', '') is string
+            && data.get('anchorDate', '').size() == 10
+          )
+        )
+
+        // Custom budgets require customDays.
+        && (
+          data.cadence != 'custom'
+          ||
+          (
+            data.get('customDays', 0) is int
+            && data.get('customDays', 0) > 0
+            && data.get('customDays', 0) <= 365
+          )
+        );
+    }
+
+    function validBudgetUpdate() {
+      let affected =
+        request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+
+      return affected.hasOnly([
+          'name',
+          'amountCents',
+          'currency',
+          'cadence',
+          'anchorDate',
+          'customDays',
+          'active',
+          'updatedAt'
+        ])
+
+        && validBudgetData(request.resource.data)
+
+        // Every modification must update audit timestamp.
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // ============================================================
+    // TRANSACTION VALIDATION
+    // ============================================================
+
+    function validTransactionData(data) {
+      return data.keys().hasAll([
+          'amountCents',
+          'description',
+          'transactionDate',
+          'createdByUid',
+          'createdByDisplayName',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'amountCents',
+          'description',
+          'transactionDate',
+          'createdByUid',
+          'createdByDisplayName',
+          'createdAt',
+          'updatedAt',
+          'updatedByUid'
+        ])
+
+        && data.amountCents is int
+        && data.amountCents > 0
+
+        // Maximum transaction = $1,000,000.
+        && data.amountCents <= 100000000
+
+        && data.description is string
+        && data.description.size() > 0
+        && data.description.size() <= 200
+
+        // YYYY-MM-DD is 10 characters.
+        && data.transactionDate is string
+        && data.transactionDate.size() == 10
+
+        && data.createdByUid is string
+        && data.createdByUid.size() > 0
+
+        && validDisplayName(
+          data.createdByDisplayName
+        )
+
+        && data.createdAt is timestamp
+
+        && (
+          !data.keys().hasAny(['updatedAt'])
+          || data.updatedAt is timestamp
+        )
+
+        && (
+          !data.keys().hasAny(['updatedByUid'])
+          || data.updatedByUid is string
+        );
+    }
+
+    function validTransactionUpdate() {
+      let affected =
+        request.resource.data
+          .diff(resource.data)
+          .affectedKeys();
+
+      return affected.hasOnly([
+          'amountCents',
+          'description',
+          'transactionDate',
+          'updatedAt',
+          'updatedByUid'
+        ])
+
+        && validTransactionData(
+          request.resource.data
+        )
+
+        // Audit who performed the edit.
+        && request.resource.data.updatedByUid
+          == request.auth.uid
+
+        && request.resource.data.updatedAt
+          == request.time;
+    }
+
+
+    // ============================================================
+    // HOUSEHOLDS
+    // ============================================================
+
     match /households/{householdId} {
-      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.name is string;
-      allow read: if signedIn() && (resource.data.ownerUid == request.auth.uid || isMember(householdId));
-      allow update, delete: if isOwner(householdId);
+
+      // Any authenticated user may create a household,
+      // but they MUST make themselves the owner.
+      allow create: if signedIn()
+        && validHouseholdData(request.resource.data)
+        && request.resource.data.ownerUid
+          == request.auth.uid
+        && request.resource.data.createdAt
+          == request.time
+        && (
+          !request.resource.data.keys().hasAny(['updatedAt'])
+          || request.resource.data.updatedAt
+            == request.time
+        );
+
+
+      // Owner may read the household before their member
+      // document exists. Normal members need membership.
+      allow get: if signedIn()
+        && (
+          resource.data.ownerUid == request.auth.uid
+          || isMember(householdId)
+        );
+
+
+      // Household collection queries are intentionally
+      // not broadly permitted.
+      //
+      // Membership discovery should use the member
+      // collection-group rule farther below.
+      allow list: if false;
+
+
+      // Only owner can edit household settings.
+      // ownerUid and createdAt are immutable.
+      allow update: if isOwner(householdId)
+
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'name',
+            'currency',
+            'timeZone',
+            'updatedAt'
+          ])
+
+        && validHouseholdData(
+          request.resource.data
+        )
+
+        && request.resource.data.updatedAt
+          == request.time;
+
+
+      // Only owner may delete household.
+      allow delete: if isOwner(householdId);
+
+
+      // ==========================================================
+      // MEMBERS
+      // ==========================================================
+
       match /members/{uid} {
-        allow get: if signedIn() && (request.auth.uid == uid || isOwner(householdId));
+
+        // User may read their own membership.
+        // Owner may inspect membership records.
+        allow get: if signedIn()
+          && (
+            request.auth.uid == uid
+            || isOwner(householdId)
+          );
+
+
+        // Only owner can list every household member.
         allow list: if isOwner(householdId);
-        allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && ((request.resource.data.role == 'owner' && (get(householdPath(householdId)).data.ownerUid == request.auth.uid || getAfter(householdPath(householdId)).data.ownerUid == request.auth.uid)) || (request.resource.data.role == 'member' && request.resource.data.inviteToken is string && validInvite(request.resource.data.inviteToken, householdId)));
-        allow update: if isOwner(householdId) || (request.auth.uid == uid && request.resource.data.uid == resource.data.uid && request.resource.data.role == resource.data.role);
-        allow delete: if isOwner(householdId) || (request.auth.uid == uid && resource.data.role != 'owner');
+
+
+        allow create: if signedIn()
+
+          // You may only create YOUR OWN membership.
+          && request.auth.uid == uid
+
+          && request.resource.data.uid == uid
+
+          && validMemberData(
+            request.resource.data
+          )
+
+          && request.resource.data.joinedAt
+            == request.time
+
+          && (
+
+            // ------------------------------------------
+            // OWNER MEMBERSHIP
+            // ------------------------------------------
+
+            (
+              request.resource.data.role == 'owner'
+
+              && !request.resource.data.keys()
+                .hasAny(['inviteToken'])
+
+              // Works whether household was already created
+              // or is being created in the same batch.
+              && isOwnerAfterWrite(householdId)
+            )
+
+            ||
+
+            // ------------------------------------------
+            // INVITED MEMBER
+            // ------------------------------------------
+
+            (
+              request.resource.data.role == 'member'
+
+              && request.resource.data.inviteToken
+                is string
+
+              && validInvite(
+                request.resource.data.inviteToken,
+                householdId
+              )
+            )
+          );
+
+
+        // Member/owner may update display name.
+        // inviteToken may be removed after joining.
+        //
+        // uid, role and joinedAt cannot be changed.
+        allow update: if signedIn()
+          && (
+            request.auth.uid == uid
+            || isOwner(householdId)
+          )
+          && validMemberUpdate();
+
+
+        // Owner may remove normal members.
+        // A member may remove themselves.
+        //
+        // The OWNER membership may NOT be deleted.
+        allow delete: if signedIn()
+
+          && resource.data.role != 'owner'
+
+          && (
+            isOwner(householdId)
+            || request.auth.uid == uid
+          );
       }
+
+
+      // ==========================================================
+      // SHARED BUDGETS
+      // ==========================================================
+
       match /budgets/{budgetId} {
+
         allow read: if isMember(householdId);
-        allow create: if isMember(householdId) && request.resource.data.createdByUid == request.auth.uid && request.resource.data.amountCents is int && request.resource.data.amountCents > 0;
-        allow update, delete: if isMember(householdId);
+
+
+        allow create: if isMember(householdId)
+
+          && validBudgetData(
+            request.resource.data
+          )
+
+          && request.resource.data.createdByUid
+            == request.auth.uid
+
+          && request.resource.data.createdAt
+            == request.time
+
+          && (
+            !request.resource.data.keys()
+              .hasAny(['updatedAt'])
+
+            || request.resource.data.updatedAt
+              == request.time
+          );
+
+
+        // Members may edit shared budgets, but only
+        // approved fields may change.
+        //
+        // createdByUid / createdAt cannot be changed.
+        allow update: if isMember(householdId)
+          && validBudgetUpdate();
+
+
+        // Current v1 design allows household members
+        // to remove/archive shared budgets.
+        allow delete: if isMember(householdId);
+
+
+        // ========================================================
+        // SHARED TRANSACTIONS
+        // ========================================================
+
         match /transactions/{transactionId} {
+
           allow read: if isMember(householdId);
-          allow create: if isMember(householdId) && request.resource.data.createdByUid == request.auth.uid && request.resource.data.amountCents is int && request.resource.data.amountCents > 0;
-          allow update, delete: if isMember(householdId);
+
+
+          allow create: if isMember(householdId)
+
+            && validTransactionData(
+              request.resource.data
+            )
+
+            && request.resource.data.createdByUid
+              == request.auth.uid
+
+            && request.resource.data.createdAt
+              == request.time
+
+            && (
+              !request.resource.data.keys()
+                .hasAny(['updatedByUid'])
+
+              || request.resource.data.updatedByUid
+                == request.auth.uid
+            )
+
+            && (
+              !request.resource.data.keys()
+                .hasAny(['updatedAt'])
+
+              || request.resource.data.updatedAt
+                == request.time
+            );
+
+
+          // Members can correct shared purchases,
+          // but cannot change:
+          //
+          // - original creator
+          // - creator display-name snapshot
+          // - original creation timestamp
+          //
+          // Updated audit data must identify the editor.
+          allow update: if isMember(householdId)
+            && validTransactionUpdate();
+
+
+          allow delete: if isMember(householdId);
         }
       }
     }
+
+
+    // ============================================================
+    // OWN MEMBERSHIP DISCOVERY
+    // ============================================================
+    //
+    // This allows the app to discover which households the
+    // signed-in user belongs to via a collection-group query.
+    //
+    // Query should be:
+    //
+    // collectionGroup('members')
+    //   .where('uid', '==', auth.currentUser.uid)
+    //
+    // It does NOT allow users to enumerate everybody else's
+    // memberships.
+
+    match /{path=**}/members/{uid} {
+
+      allow get: if signedIn()
+        && request.auth.uid == uid;
+
+      allow list: if signedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+
+    // ============================================================
+    // HOUSEHOLD INVITES
+    // ============================================================
+
     match /invites/{inviteToken} {
+
+      // The token itself acts as the secret.
+      // User must still be authenticated.
       allow get: if signedIn();
+
+
+      // Never allow enumeration of invite tokens.
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.createdByUid == request.auth.uid && isOwner(request.resource.data.householdId);
-      allow update, delete: if signedIn() && isOwner(resource.data.householdId);
+
+
+      allow create: if signedIn()
+
+        && request.resource.data.keys().hasAll([
+          'householdId',
+          'householdName',
+          'createdByUid',
+          'createdAt',
+          'expiresAt',
+          'active'
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          'householdId',
+          'householdName',
+          'createdByUid',
+          'createdAt',
+          'expiresAt',
+          'active'
+        ])
+
+        && request.resource.data.householdId
+          is string
+
+        && request.resource.data.householdId
+          .size() > 0
+
+        && request.resource.data.householdName
+          is string
+
+        && request.resource.data.householdName
+          .size() > 0
+
+        && request.resource.data.householdName
+          .size() <= 80
+
+        && request.resource.data.createdByUid
+          == request.auth.uid
+
+        && request.resource.data.createdAt
+          == request.time
+
+        && request.resource.data.expiresAt
+          is timestamp
+
+        && request.resource.data.expiresAt
+          > request.time
+
+        && request.resource.data.active
+          == true
+
+        && isOwner(
+          request.resource.data.householdId
+        )
+
+        // Prevent a malicious client from putting a
+        // fake household name in the invitation screen.
+        && request.resource.data.householdName
+          == get(
+            householdPath(
+              request.resource.data.householdId
+            )
+          ).data.name;
+
+
+      // Owner may revoke an invite or change expiry.
+      //
+      // householdId, creator, name and createdAt
+      // remain immutable.
+      allow update: if signedIn()
+
+        && isOwner(
+          resource.data.householdId
+        )
+
+        && request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'active',
+            'expiresAt'
+          ])
+
+        && request.resource.data.active
+          is bool
+
+        && request.resource.data.expiresAt
+          is timestamp
+
+        && (
+          request.resource.data.active == false
+          || request.resource.data.expiresAt
+            > request.time
+        );
+
+
+      allow delete: if signedIn()
+        && isOwner(
+          resource.data.householdId
+        );
+    }
+
+
+    // ============================================================
+    // EVERYTHING ELSE
+    // ============================================================
+    //
+    // Firestore is deny-by-default, but this makes the intent
+    // explicit for any future collections.
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
