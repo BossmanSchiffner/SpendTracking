@@ -63,7 +63,7 @@ const state = await page.evaluate(() => ({
   savedDebt: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts.length,
   savedInterestRateBps: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts[0].interestRateBps,
   computedInterestCents: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts[0].interestChargeCents,
-  latePastDay: document.querySelector('#day-grid .day-tile.late') !== null,
+  goldNoSpendDay: document.querySelector('#day-grid .day-tile.no-spend') !== null,
   copiedPresetAllocation: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.some(item => item.sourcePresetId),
   mustPayTotalCents: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.filter(item => item.kind === 'must').reduce((total, item) => total + item.amountCents, 0),
   presets: JSON.parse(localStorage.getItem('money-until-payday-v1')).recurringMustPays.map(item => ({ name: item.name, cadence: item.cadence, anchorType: item.anchorType, anchorDate: item.anchorDate })),

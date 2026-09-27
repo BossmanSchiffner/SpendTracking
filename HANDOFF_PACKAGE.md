@@ -79,7 +79,7 @@ Debt allocations reference `debtId`. The editor accepts an interest percentage a
 The two-week day grid is the date selector. The visible date input is hidden and retained only as an internal compatibility value.
 
 - Users tap a day tile to select a date.
-- The `All purchases logged` action remains available only when the selected day has discretionary purchases.
+- The `All purchases logged` action checks the selected day: days with discretionary purchases become logged, while days with none become gold no-spend days.
 - The `No spending` action is hidden.
 - A completed past day with no discretionary purchases automatically receives the derived `no-spend` status; the current day remains `pending` until it is complete.
 - Existing explicit check-in records remain supported for backup compatibility.
