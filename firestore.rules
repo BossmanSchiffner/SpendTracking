@@ -219,6 +219,7 @@ service cloud.firestore {
         && data.cadence in [
           'weekly',
           'biweekly',
+          'four-weeks',
           'monthly',
           'custom'
         ]
