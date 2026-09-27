@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function householdPath(id) { return /databases/$(database)/documents/households/$(id); }
+    function memberPath(id) { return /databases/$(database)/documents/households/$(id)/members/$(request.auth.uid); }
+    function isMember(id) { return signedIn() && exists(memberPath(id)); }
+    function isOwner(id) { return isMember(id) && get(householdPath(id)).data.ownerUid == request.auth.uid; }
+    function validInvite(token, id) {
+      let invite = get(/databases/$(database)/documents/invites/$(token));
+      return signedIn() && invite.data.householdId == id && invite.data.active == true && invite.data.expiresAt > request.time;
+    }
+    match /households/{householdId} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid && request.resource.data.name is string;
+      allow read: if isMember(householdId);
+      allow update, delete: if isOwner(householdId);
+      match /members/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || isOwner(householdId));
+        allow list: if isOwner(householdId);
+        allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == uid && ((request.resource.data.role == 'owner' && get(householdPath(householdId)).data.ownerUid == request.auth.uid) || (request.resource.data.role == 'member' && request.resource.data.inviteToken is string && validInvite(request.resource.data.inviteToken, householdId)));
+        allow update: if isOwner(householdId) || (request.auth.uid == uid && request.resource.data.uid == resource.data.uid && request.resource.data.role == resource.data.role);
+        allow delete: if isOwner(householdId) || (request.auth.uid == uid && resource.data.role != 'owner');
+      }
+      match /budgets/{budgetId} {
+        allow read: if isMember(householdId);
+        allow create: if isMember(householdId) && request.resource.data.createdByUid == request.auth.uid && request.resource.data.amountCents is int && request.resource.data.amountCents > 0;
+        allow update, delete: if isMember(householdId);
+        match /transactions/{transactionId} {
+          allow read: if isMember(householdId);
+          allow create: if isMember(householdId) && request.resource.data.createdByUid == request.auth.uid && request.resource.data.amountCents is int && request.resource.data.amountCents > 0;
+          allow update, delete: if isMember(householdId);
+        }
+      }
+    }
+    match /invites/{inviteToken} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.createdByUid == request.auth.uid && isOwner(request.resource.data.householdId);
+      allow update, delete: if signedIn() && isOwner(resource.data.householdId);
+    }
+  }
+}

@@ -51,3 +51,4 @@ dialog{max-width:calc(100vw - 24px)}
 .nav button{display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;white-space:normal;overflow:hidden;overflow-wrap:normal;text-overflow:clip;min-height:42px;padding:8px 2px}
 .checkin-actions{display:flex;justify-content:center}
 .checkin-actions #mark-logged{min-width:min(100%,240px)}
+.shared-budget-choice{display:block;width:100%;margin:8px 0;text-align:left}.shared-budget-choice.selected{outline:2px solid var(--accent);outline-offset:1px}.shared-section-heading{margin-top:18px}.shared-panel[hidden],#shared-budget-detail[hidden]{display:none!important}#shared-remaining{font-size:1.2rem}.negative{color:var(--bad)}

@@ -29,6 +29,12 @@ GitHub Pages serves these files publicly. The app itself contains no personal tr
 - **Back up regularly:** Settings > Download JSON backup. Restoring a backup **replaces** existing data on that browser. Two CSV exports include purchases and must-pay/debt/savings entries across all periods, for Excel; they do not include settings or no-spend marks. JSON is the complete backup. Existing V1 and V2 browser data and JSON backups are migrated automatically; older periods show “Pay amount missing” until you enter the original pay amount, if available.
 - Browser data is device and browser specific. Clearing site data or changing phones without restoring a backup loses the records. The app has no account or sync.
 
+## Shared Budgets
+
+Shared Budgets is optional. Personal payday, debt, savings, history, achievements, and exports remain local. Opening Shared loads Firebase Authentication and Firestore; signed-out users are not prompted during normal personal-app startup.
+
+The Shared area supports email/password sign-in, household creation, invite links, shared budget periods, real-time shared purchases, archive state, persistent Firestore cache, and offline queued writes. Firebase Console setup must enable Email/Password Authentication, create the Firestore database, and deploy [firestore.rules](firestore.rules). No service-account credentials belong in this repository.
+
 ## Current feature notes
 
 - Recurring must-pay presets are managed from **Debts** with bi-weekly or monthly frequency and a next/last payment date anchor; enabled presets are copied into pay periods containing a due payment.
