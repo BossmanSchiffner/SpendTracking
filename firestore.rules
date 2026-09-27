@@ -195,6 +195,7 @@ service cloud.firestore {
           'anchorDate',
           'customDays',
           'endDate',
+          'recurring',
           'active',
           'createdByUid',
           'createdAt',
@@ -262,6 +263,11 @@ service cloud.firestore {
             data.endDate is string
             && data.endDate.size() == 10
           )
+        )
+
+        && (
+          !data.keys().hasAny(['recurring'])
+          || data.recurring is bool
         );
     }
 
@@ -279,6 +285,7 @@ service cloud.firestore {
           'anchorDate',
           'customDays',
           'endDate',
+          'recurring',
           'active',
           'updatedAt'
         ])

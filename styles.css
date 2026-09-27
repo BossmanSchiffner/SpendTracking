@@ -57,4 +57,5 @@ dialog{max-width:calc(100vw - 24px)}
 .settings-navigation{display:grid;gap:10px}.settings-navigation h2{margin-bottom:0}.view-heading{align-items:center;margin-bottom:12px}.view-heading h1{margin:0}
 .shared-create-household{margin:14px 0 30px}
 .shared-create-budget{margin:14px 0}.shared-add-purchase{margin:12px 0}
+.allocation-details{margin-top:10px;border-top:1px solid var(--line)}.allocation-details summary{padding:10px 0;color:var(--muted);font-size:.82rem;font-weight:700;cursor:pointer;list-style-position:inside}.allocation-details[open] summary{color:var(--accent)}
 .shared-budget-list-card{margin-top:14px}.shared-budget-choice{display:block;width:100%;margin:8px 0;text-align:left;white-space:normal;overflow-wrap:anywhere;word-break:break-word}.shared-budget-choice.selected{outline:2px solid var(--accent);outline-offset:1px}#shared-household-select{display:block;width:100%;margin-top:8px}
