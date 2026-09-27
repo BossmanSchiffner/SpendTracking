@@ -194,6 +194,7 @@ service cloud.firestore {
           'cadence',
           'anchorDate',
           'customDays',
+          'endDate',
           'active',
           'createdByUid',
           'createdAt',
@@ -252,6 +253,15 @@ service cloud.firestore {
             && data.get('customDays', 0) > 0
             && data.get('customDays', 0) <= 365
           )
+        )
+
+        // Existing budgets may omit endDate; new clients provide it.
+        && (
+          !data.keys().hasAny(['endDate'])
+          || (
+            data.endDate is string
+            && data.endDate.size() == 10
+          )
         );
     }
 
@@ -268,6 +278,7 @@ service cloud.firestore {
           'cadence',
           'anchorDate',
           'customDays',
+          'endDate',
           'active',
           'updatedAt'
         ])
