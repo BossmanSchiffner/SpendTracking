@@ -1,4 +1,4 @@
-# Money Until Payday V1
+# Money Until Payday
 
 A mobile-first, installable paycheque planner and discretionary spending tracker. Static HTML, CSS and JavaScript; no build step, subscription, login, or bank connection. All data is saved locally in this browser. Amounts use Canadian dollars.
 
@@ -28,6 +28,13 @@ GitHub Pages serves these files publicly. The app itself contains no personal tr
 - Use What if I buy something? to preview the effect of a purchase without recording it. From the preview you may open the normal purchase form with the amount prefilled. Close a period to see a payday recap with check-ins, amount left or over, debt payments, and savings transfers, then archive it and start another. History retains the check-in summary and category totals. Optionally set a default allowance and payday interval in Settings. Leaving the default allowance blank asks for a value each payday. Existing users keep their saved settings and categories; new users start with general categories.
 - **Back up regularly:** Settings > Download JSON backup. Restoring a backup **replaces** existing data on that browser. Two CSV exports include purchases and must-pay/debt/savings entries across all periods, for Excel; they do not include settings or no-spend marks. JSON is the complete backup. Existing V1 and V2 browser data and JSON backups are migrated automatically; older periods show “Pay amount missing” until you enter the original pay amount, if available.
 - Browser data is device and browser specific. Clearing site data or changing phones without restoring a backup loses the records. The app has no account or sync.
+
+## Current feature notes
+
+- Recurring must-pay presets are managed from **Debts** and enabled presets are copied once when a new pay period starts.
+- The Debts view tracks balances and debt allocations; debt payments reduce the tracked current balance.
+- Daily check-in dates are selected from the two-week grid. **All purchases logged** remains available for purchase days, while days with no discretionary purchases receive a no-spending status automatically.
+- The complete engineering context is in [HANDOFF_PACKAGE.md](HANDOFF_PACKAGE.md).
 
 ## Project files
 

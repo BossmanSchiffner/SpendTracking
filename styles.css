@@ -28,3 +28,23 @@
  .legend-text{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:baseline}
  .legend-text span:first-child{white-space:nowrap}
 }
+
+/* Keep generated labels and actions inside narrow cards and dialogs. */
+button,input,select,textarea{max-width:100%;min-width:0}
+button{white-space:normal;overflow-wrap:anywhere}
+.row{flex-wrap:wrap}
+.item{min-width:0}
+.item-main,.item-side{min-width:0;max-width:100%}
+.item-main{flex:1 1 11rem}
+.item-side{flex:0 1 auto;text-align:right}
+.item-title,.item-sub,.debt-meta{overflow-wrap:anywhere;word-break:break-word}
+.item-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+dialog{max-width:calc(100vw - 24px)}
+.dialog-form{width:min(100%,420px);max-width:100%;min-width:0}
+.balance{font-size:3.5rem}
+@media(max-width:600px){
+ .legend-text span:first-child{white-space:normal;overflow-wrap:anywhere}
+ .item-side{flex-basis:100%;text-align:left}
+ .item-actions{justify-content:flex-start}
+}
+@media(max-width:360px){.balance{font-size:2.6rem}}
