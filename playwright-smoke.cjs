@@ -22,13 +22,14 @@ await page.locator('#preset-form button[type="submit"]').click();
 console.log('preset saved');
 await page.locator('#add-debt').click();
 console.log('debt dialog');
+const interestRateVisible = await page.locator('#debt-form input[name="interestRate"]').isVisible();
 await page.locator('#debt-form input[name="name"]').fill('Card');
 await page.locator('#debt-form input[name="startingBalance"]').fill('1200');
 await page.locator('#debt-form input[name="interestRate"]').fill('19.99');
 await page.locator('#debt-form button[type="submit"]').click();
 console.log('debt saved');
 await page.locator('[data-view="dashboard"]').click();
-await page.locator('#period-form input[name="startDate"]').fill('2026-09-27');
+await page.locator('#period-form input[name="startDate"]').fill('2026-09-25');
 await page.locator('#period-form input[name="nextPayday"]').fill('2026-10-11');
 await page.locator('#period-form input[name="payAmount"]').fill('2500');
 await page.locator('#period-form input[name="allowance"]').fill('500');
@@ -41,6 +42,8 @@ await page.locator('#preset-form input[name="amount"]').fill('50');
 await page.locator('#preset-form button[type="submit"]').click();
 console.log('active preset saved');
 await page.locator('[data-view="dashboard"]').click();
+await page.locator('#day-grid .day-tile').first().click();
+await page.locator('#mark-logged').click();
 const state = await page.evaluate(() => ({
   title: document.title,
   dashboardVisible: !document.querySelector('#dashboard').hidden,
@@ -56,9 +59,13 @@ const state = await page.evaluate(() => ({
   savedDebt: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts.length,
   savedInterestRateBps: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts[0].interestRateBps,
   computedInterestCents: JSON.parse(localStorage.getItem('money-until-payday-v1')).debts[0].interestChargeCents,
+  latePastDay: document.querySelector('#day-grid .day-tile.late') !== null,
   copiedPresetAllocation: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.some(item => item.sourcePresetId),
-  mustPayTotalCents: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.filter(item => item.kind === 'must').reduce((total, item) => total + item.amountCents, 0)
+  mustPayTotalCents: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.filter(item => item.kind === 'must').reduce((total, item) => total + item.amountCents, 0),
+  presets: JSON.parse(localStorage.getItem('money-until-payday-v1')).recurringMustPays.map(item => ({ name: item.name, cadence: item.cadence, anchorType: item.anchorType, anchorDate: item.anchorDate })),
+  allocations: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.filter(item => item.kind === 'must').map(item => ({ name: item.reason, sourcePresetId: item.sourcePresetId, dueDate: item.dueDate }))
 }));
+state.interestRateVisible = interestRateVisible;
 await page.screenshot({ path: 'playwright-home.png', fullPage: true });
 console.log(JSON.stringify({ state, consoleErrors, pageErrors }, null, 2));
 await browser.close();
