@@ -34,6 +34,7 @@ The existing workflow must remain intact:
 - Record must pays, debt payments, and savings transfers
 - Pay-period history and payday recap
 - Daily check-in grid, streaks, achievements, and Payday Finisher
+- Cumulative savings achievement: the supplied `icons/bronze_500_savings_badge_transparent.png` unlocks when savings allocations total at least 50,000 cents.
 - Settings for currency, cadence, and default allowance
 - JSON backup/restore and purchase/allocation CSV exports
 - Local persistence and offline PWA behavior
@@ -82,6 +83,7 @@ The two-week day grid is the date selector. The visible date input is hidden and
 - The `No spending` action is hidden.
 - A completed past day with no discretionary purchases automatically receives the derived `no-spend` status; the current day remains `pending` until it is complete.
 - Existing explicit check-in records remain supported for backup compatibility.
+- Clearing a selected check-in stores a `clearedCheckins` marker so derived no-spend status stays dismissed until a purchase is added.
 - Future days remain neutral/disabled.
 
 When changing this behavior, preserve streak calculations and historical backup validation.

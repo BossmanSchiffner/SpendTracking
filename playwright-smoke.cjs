@@ -35,6 +35,10 @@ await page.locator('#period-form input[name="payAmount"]').fill('2500');
 await page.locator('#period-form input[name="allowance"]').fill('500');
 await page.locator('#period-form button[type="submit"]').click();
 console.log('period saved');
+await page.locator('.allocation-add[data-kind="savings"]').click();
+await page.locator('#allocation-form input[name="amount"]').fill('500');
+await page.locator('#allocation-form input[name="reason"]').fill('Emergency fund');
+await page.locator('#allocation-form button[type="submit"]').click();
 await page.locator('[data-view="debts"]').click();
 await page.locator('#add-preset').click();
 await page.locator('#preset-form input[name="name"]').fill('Utilities');
@@ -65,6 +69,7 @@ const state = await page.evaluate(() => ({
   presets: JSON.parse(localStorage.getItem('money-until-payday-v1')).recurringMustPays.map(item => ({ name: item.name, cadence: item.cadence, anchorType: item.anchorType, anchorDate: item.anchorDate })),
   allocations: JSON.parse(localStorage.getItem('money-until-payday-v1')).allocations.filter(item => item.kind === 'must').map(item => ({ name: item.reason, sourcePresetId: item.sourcePresetId, dueDate: item.dueDate }))
 }));
+state.savingsBadgeUnlocked = await page.locator('.achievement-savings.is-unlocked').count() === 1;
 state.interestRateVisible = interestRateVisible;
 await page.screenshot({ path: 'playwright-home.png', fullPage: true });
 console.log(JSON.stringify({ state, consoleErrors, pageErrors }, null, 2));
